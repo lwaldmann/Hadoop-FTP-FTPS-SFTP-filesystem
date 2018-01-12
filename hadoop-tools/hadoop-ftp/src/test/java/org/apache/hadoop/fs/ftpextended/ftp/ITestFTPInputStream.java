@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.ftpextended.common.Channel;
+import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,10 +43,12 @@ import org.slf4j.LoggerFactory;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.writeDataset;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.writeTextFile;
 import static org.apache.hadoop.fs.ftpextended.ftp.ITestFTPFileSystem.FTP_URI;
-import org.apache.hadoop.test.GenericTestUtils;
+
 import org.junit.AfterClass;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+
 import org.junit.BeforeClass;
 import org.junit.rules.Timeout;
 
@@ -55,7 +58,7 @@ import org.junit.rules.Timeout;
 public class ITestFTPInputStream {
 
   private static final String TEST_ROOT_DIR
-          = GenericTestUtils.getRandomizedTempPath();
+          = FTPContractTestMixin.getRandomizedTempPath();
   private static final Logger LOG = LoggerFactory.getLogger(
           ITestFTPInputStream.class);
   private static FileSystem localFs = null;

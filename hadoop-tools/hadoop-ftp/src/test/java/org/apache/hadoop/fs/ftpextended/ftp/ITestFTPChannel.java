@@ -26,7 +26,7 @@ import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystem;
 import org.apache.hadoop.fs.ftpextended.common.Channel;
 import org.apache.hadoop.fs.ftpextended.common.ConnectionInfo;
 import org.apache.hadoop.fs.ftpextended.common.Server;
-import org.apache.hadoop.test.GenericTestUtils;
+import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -35,6 +35,7 @@ import org.littleshoot.proxy.HttpProxyServer;
 import org.littleshoot.proxy.impl.DefaultHttpProxyServer;
 
 import static org.junit.Assert.*;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
@@ -45,7 +46,7 @@ import org.junit.rules.Timeout;
 public class ITestFTPChannel {
 
   protected static final String TEST_ROOT_DIR
-          = GenericTestUtils.getRandomizedTempPath();
+          = FTPContractTestMixin.getRandomizedTempPath();
 
   @Rule
   public Timeout testTimeout = new Timeout(1 * 60 * 1000);

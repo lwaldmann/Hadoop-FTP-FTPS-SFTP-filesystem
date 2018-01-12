@@ -19,6 +19,7 @@ import java.util.Collection;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.contract.AbstractContractDeleteTest;
 import org.apache.hadoop.fs.contract.AbstractFSContract;
+import org.apache.hadoop.test.GenericTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -45,7 +46,7 @@ public class ITestContractDelete extends AbstractContractDeleteTest implements
   @Override
   protected AbstractFSContract createContract(Configuration conf) throws
           IllegalStateException {
-    return setupContract(conf, cache, schema, this.methodName.getMethodName());
+    return setupContract(conf, cache, schema, GenericTestUtils.getMethodName());
   }
 
   @Override

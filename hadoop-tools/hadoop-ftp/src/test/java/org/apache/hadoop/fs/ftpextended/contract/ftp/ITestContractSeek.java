@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.contract.AbstractFSContract;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
+import org.apache.hadoop.test.GenericTestUtils;
 
 /**
  *  Test seek contract.
@@ -49,7 +50,7 @@ public class ITestContractSeek extends AbstractContractSeekTest implements
   @Override
   protected AbstractFSContract createContract(Configuration conf) throws
           IllegalStateException {
-    return setupContract(conf, cache, schema, this.methodName.getMethodName());
+    return setupContract(conf, cache, schema, GenericTestUtils.getMethodName());
   }
 
   @Override

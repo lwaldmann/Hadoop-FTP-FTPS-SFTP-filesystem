@@ -28,6 +28,8 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
+
 import static org.apache.hadoop.fs.contract.ContractTestUtils.assertDeleted;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.assertIsDirectory;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.assertIsFile;
@@ -36,8 +38,8 @@ import static org.apache.hadoop.fs.contract.ContractTestUtils.assertPathExists;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.touch;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.verifyFileContents;
 import static org.apache.hadoop.fs.contract.ContractTestUtils.writeTextFile;
+
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.junit.After;
@@ -50,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.rules.Timeout;
@@ -62,7 +65,7 @@ public abstract class AbstractFTPFileSystemTest {
   private static final Logger LOG = LoggerFactory.getLogger(
           AbstractFTPFileSystemTest.class);
   protected static final String TEST_ROOT_DIR
-          = GenericTestUtils.getRandomizedTempPath();
+          = FTPContractTestMixin.getRandomizedTempPath();
   public static final String TEST_DIR = "testsftp";
 
   @Rule

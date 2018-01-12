@@ -18,20 +18,46 @@ package org.apache.hadoop.fs.ftpextended.contract;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.contract.AbstractFSContract;
-import org.apache.hadoop.test.GenericTestUtils;
 
 /**
  * Use as common for all type of contracts.
  */
 public interface FTPContractTestMixin {
 
+  /**
+   * system property for test data: {@value}
+   */
+  static final String SYSPROP_TEST_DATA_DIR = "test.build.data";
+
+  /**
+   * The default path for using in Hadoop path references: {@value}
+   */
+  static final String DEFAULT_TEST_DATA_PATH = "target/test/data/";
+
+  static String getTempPath(String subpath) {
+    String prop = System.getProperty(SYSPROP_TEST_DATA_DIR, DEFAULT_TEST_DATA_PATH);
+    if (prop.isEmpty()) {
+      // corner case: property is there but empty
+      prop = DEFAULT_TEST_DATA_PATH;
+    }
+    if (!prop.endsWith("/")) {
+      prop = prop + "/";
+    }
+    return prop + subpath;
+  }
+
+  static  String getRandomizedTempPath() {
+    return getTempPath(RandomStringUtils.randomAlphanumeric(10));
+  }
+
   Path TEST_ROOT = new Path(CommonContract.createTestPath(new Path("/")),
-          GenericTestUtils.getRandomizedTempPath());
+          getRandomizedTempPath());
 
   static Collection<Object[]> getData() {
     Object[][] data = {{true, "ftp"}, {true, "sftp"}, {true, "ftps"},

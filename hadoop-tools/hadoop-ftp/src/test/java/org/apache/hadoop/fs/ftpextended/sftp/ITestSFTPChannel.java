@@ -34,7 +34,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystem;
 import org.apache.hadoop.fs.ftpextended.common.ConnectionInfo;
 import org.apache.hadoop.fs.ftpextended.common.Server;
-import org.apache.hadoop.test.GenericTestUtils;
+import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
@@ -57,7 +58,7 @@ import org.junit.rules.Timeout;
 public class ITestSFTPChannel {
   private static Server server;
   protected static final String TEST_ROOT_DIR
-          = GenericTestUtils.getRandomizedTempPath();
+          = FTPContractTestMixin.getRandomizedTempPath();
 
   @Rule
   public Timeout testTimeout = new Timeout(1 * 60 * 1000);
