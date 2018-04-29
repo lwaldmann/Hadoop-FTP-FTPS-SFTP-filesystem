@@ -19,15 +19,16 @@ package org.apache.hadoop.fs.ftpextended.ftp;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystem;
+import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystemTest;
 import org.apache.hadoop.fs.ftpextended.common.Channel;
 import org.apache.hadoop.fs.ftpextended.common.ConnectionInfo;
 import org.apache.hadoop.fs.ftpextended.common.Server;
 import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +40,8 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tests of FTP channel creation.
@@ -51,10 +54,10 @@ public class ITestFTPChannel {
   @Rule
   public Timeout testTimeout = new Timeout(1 * 60 * 1000);
 
-  private AbstractFTPFileSystem ftpFs;
-  private URI uriInfo;
-
   private static Server server;
+  private Configuration conf;
+  private static final Logger LOG = LoggerFactory.getLogger(
+          ITestFTPChannel.class);
 
   @BeforeClass
   public static void setTest() throws IOException, FtpException {
@@ -68,53 +71,70 @@ public class ITestFTPChannel {
 
   @Before
   public void setup() throws IOException, Exception {
-    Configuration conf = new Configuration();
+    conf = new Configuration();
     conf.setClass("fs.ftp.impl", FTPFileSystem.class, FileSystem.class);
     conf.setClass("fs.ftps.impl", FTPFileSystem.class, FileSystem.class);
     conf.setInt("fs.ftp.host.port", server.getPort());
     conf.setBoolean("fs.ftp.impl.disable.cache", true);
     conf.set("fs.ftp.proxy.host", "localhost");
-    uriInfo = URI.create("ftp://user:password@localhost");
-    ftpFs = (AbstractFTPFileSystem) FileSystem.get(uriInfo, conf);
   }
 
-  @After
-  public void teardown() throws IOException, InterruptedException {
-    ftpFs.close();
+  @Test
+  public void testCredentials() throws Exception {
+    LOG.info("testCredentials");
+    AbstractFTPFileSystemTest.setEnv();
+    URI uriInfo = URI.create("ftp://user@localhost");
+    URL url = this.getClass().getClassLoader().getResource("keystore.jceks");
+    conf.set("hadoop.security.credential.provider.path", new URI("localjceks", "file",
+            url.getPath(), null).toString());
+    conf.setEnum("fs.ftp.proxy.type", AbstractFTPFileSystem.ProxyType.NONE);
+    ConnectionInfo info = new ConnectionInfo(FTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = FTPChannel.create(info)) {
+      assertNotNull(channel);
+      assertTrue(
+              "No proxy used therefore class client class shouldn't be proxied",
+              FTPPatchedClient.class.equals(channel.getNative().getClass()));
+    }
   }
 
   @Test
   public void testProxyNone() throws Exception {
-    Configuration conf = new Configuration(ftpFs.getConf());
+    LOG.info("testProxyNone");
     conf.setEnum("fs.ftp.proxy.type", AbstractFTPFileSystem.ProxyType.NONE);
+    URI uriInfo = URI.create("ftp://user:password@localhost");
     ConnectionInfo info = new ConnectionInfo(FTPChannel::create, uriInfo, conf,
             0);
-    Channel channel = FTPChannel.create(info);
-    assertNotNull(channel);
-    assertTrue(
-            "No proxy used therefore class client class shouldn't be proxied",
-            FTPPatchedClient.class.equals(channel.getNative().getClass()));
+    try (Channel channel = FTPChannel.create(info)) {
+      assertNotNull(channel);
+      assertTrue(
+              "No proxy used therefore class client class shouldn't be proxied",
+              FTPPatchedClient.class.equals(channel.getNative().getClass()));
+    }
   }
 
   @Test
   public void testProxyHTTP() throws Exception {
+    LOG.info("testProxyHTTP");
     HttpProxyServer httpServer
             = DefaultHttpProxyServer
                     .bootstrap()
                     .withPort(0)
                     .start();
     try {
-      Configuration conf = new Configuration(ftpFs.getConf());
       conf.setInt("fs.ftp.proxy.port", httpServer.getListenAddress().getPort());
       conf.setEnum("fs.ftp.proxy.type", AbstractFTPFileSystem.ProxyType.HTTP);
+      System.err.println(conf.toString());
+      URI uriInfo = URI.create("ftp://user:password@localhost");
       ConnectionInfo info
               = new ConnectionInfo(FTPChannel::create, uriInfo, conf, 0);
-      Channel channel = FTPChannel.create(info);
-      assertNotNull(channel);
-      assertTrue(
-              "Proxy used therefore class client class should be instance " +
-                      "of FTPHTTPTimeoutClient",
-              channel.getNative() instanceof FTPHTTPTimeoutClient);
+      try (Channel channel = FTPChannel.create(info)) {
+        assertNotNull(channel);
+        assertTrue(
+                "Proxy used therefore class client class should be instance " +
+                        "of FTPHTTPTimeoutClient",
+                channel.getNative() instanceof FTPHTTPTimeoutClient);
+      }
     } finally {
       httpServer.stop();
     }
@@ -122,17 +142,20 @@ public class ITestFTPChannel {
 
   @Test
   public void testProxySocks() throws Exception {
-    Configuration conf = new Configuration(ftpFs.getConf());
+    LOG.info("testProxySocks");
     conf.setEnum("fs.ftp.proxy.type", AbstractFTPFileSystem.ProxyType.SOCKS4);
+    URI uriInfo = URI.create("ftp://user:password@localhost");
     ConnectionInfo info = new ConnectionInfo(FTPChannel::create, uriInfo, conf,
             0);
-    Channel channel = FTPChannel.create(info);
-    assertNull(channel);
+    try (Channel channel = FTPChannel.create(info)) {
+      assertNull(channel);
+    }
 
     conf.setEnum("fs.ftp.proxy.type", AbstractFTPFileSystem.ProxyType.SOCKS5);
     info = new ConnectionInfo(FTPChannel::create, uriInfo, conf, 0);
-    channel = FTPChannel.create(info);
-    assertNull(channel);
+    try (Channel channel = FTPChannel.create(info)) {
+      assertNull(channel);
+    }
   }
 
 }

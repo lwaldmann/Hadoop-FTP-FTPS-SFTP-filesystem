@@ -729,4 +729,15 @@ public abstract class AbstractFTPFileSystem extends FileSystem {
       throw e;
     }
   }
+
+  @Override
+  public void setTimes(Path p, long mtime, long atime) throws IOException {
+    Channel channel = connect();
+    try {
+      channel.setTimes(p, mtime, atime);
+    } finally {
+      channel.disconnect();
+    }
+  }
+
 }

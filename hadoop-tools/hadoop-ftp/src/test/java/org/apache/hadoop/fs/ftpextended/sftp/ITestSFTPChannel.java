@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.fs.ftpextended.sftp;
 
+import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.ProxyHTTP;
 import com.jcraft.jsch.ProxySOCKS4;
 import com.jcraft.jsch.ProxySOCKS5;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.net.URL;
 import net.sourceforge.jsocks.ProxyServer;
 import net.sourceforge.jsocks.server.ServerAuthenticatorNone;
 import org.apache.commons.lang.reflect.FieldUtils;
@@ -32,10 +34,11 @@ import org.apache.ftpserver.ftplet.FtpException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystem;
+import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystemTest;
+import org.apache.hadoop.fs.ftpextended.common.Channel;
 import org.apache.hadoop.fs.ftpextended.common.ConnectionInfo;
 import org.apache.hadoop.fs.ftpextended.common.Server;
 import org.apache.hadoop.fs.ftpextended.contract.FTPContractTestMixin;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,13 +63,11 @@ public class ITestSFTPChannel {
   protected static final String TEST_ROOT_DIR
           = FTPContractTestMixin.getRandomizedTempPath();
 
-  @Rule
-  public Timeout testTimeout = new Timeout(1 * 60 * 1000);
+//  @Rule
+//  public Timeout testTimeout = new Timeout(1 * 60 * 1000);
 
   private static final Logger LOG = LoggerFactory.getLogger(
           ITestSFTPChannel.class);
-  private AbstractFTPFileSystem ftpFs;
-  private URI uriInfo;
 
   private static class SocksProxyServer extends ProxyServer {
 
@@ -92,6 +93,8 @@ public class ITestSFTPChannel {
     }
   }
 
+  private Configuration conf;
+
   @BeforeClass
   public static void setTest() throws IOException, FtpException {
     server = new SFTPServer(TEST_ROOT_DIR);
@@ -104,32 +107,27 @@ public class ITestSFTPChannel {
 
   @Before
   public void setup() throws IOException, Exception {
-    Configuration conf = new Configuration();
+    conf = new Configuration();
     conf.setClass("fs.sftp.impl", SFTPFileSystem.class, FileSystem.class);
     conf.setInt("fs.sftp.host.port", server.getPort());
     conf.setBoolean("fs.sftp.impl.disable.cache", true);
     conf.set("fs.sftp.proxy.host", "localhost");
-    uriInfo = URI.create("sftp://user:password@localhost");
-    ftpFs = (AbstractFTPFileSystem) FileSystem.get(uriInfo, conf);
-  }
-
-  @After
-  public void teardown() throws IOException, InterruptedException {
-    ftpFs.close();
+    conf.setEnum("fs.sftp.proxy.type", AbstractFTPFileSystem.ProxyType.NONE);
   }
 
   @Test
   public void testProxyNone() throws Exception {
     LOG.info("testProxyNone");
-    Configuration conf = new Configuration(ftpFs.getConf());
+    URI uriInfo = URI.create("sftp://user:password@localhost");
     conf.setEnum("fs.sftp.proxy.type", AbstractFTPFileSystem.ProxyType.NONE);
     ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
             0);
-    SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info);
-    assertNotNull(channel);
-    Session s = channel.getNative().getSession();
-    Object o = FieldUtils.readField(s, "proxy", true);
-    assertNull(o);
+    try (SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info)) {
+      assertNotNull(channel);
+      Session s = channel.getNative().getSession();
+      Object o = FieldUtils.readField(s, "proxy", true);
+      assertNull(o);
+    }
   }
 
   @Test
@@ -143,19 +141,20 @@ public class ITestSFTPChannel {
       while (!proxy.canContinue()) {
         Thread.sleep(100);
       }
-      Configuration conf = new Configuration(ftpFs.getConf());
+      URI uriInfo = URI.create("sftp://user:password@localhost");
       LOG.info("Connecting to the port: " + proxy.getPort());
       conf.setInt("fs.sftp.proxy.port", proxy.getPort());
       conf.setEnum("fs.sftp.proxy.type",
               AbstractFTPFileSystem.ProxyType.SOCKS4);
       ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo,
               conf, 0);
-      SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info);
-      assertNotNull(channel);
-      Session s = channel.getNative().getSession();
-      Object o = FieldUtils.readField(s, "proxy", true);
-      assertNotNull(o);
-      assertTrue("Type of proxy should be SOCKS4", o instanceof ProxySOCKS4);
+      try (SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info)) {
+        assertNotNull(channel);
+        Session s = channel.getNative().getSession();
+        Object o = FieldUtils.readField(s, "proxy", true);
+        assertNotNull(o);
+        assertTrue("Type of proxy should be SOCKS4", o instanceof ProxySOCKS4);
+      }
     } finally {
       proxy.stop();
     }
@@ -172,19 +171,20 @@ public class ITestSFTPChannel {
       while (!proxy.canContinue()) {
         Thread.sleep(100);
       }
-      Configuration conf = new Configuration(ftpFs.getConf());
+      URI uriInfo = URI.create("sftp://user:password@localhost");
       LOG.info("Connecting to the port: " + proxy.getPort());
       conf.setInt("fs.sftp.proxy.port", proxy.getPort());
       conf.setEnum("fs.sftp.proxy.type",
               AbstractFTPFileSystem.ProxyType.SOCKS5);
       ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo,
               conf, 0);
-      SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info);
-      assertNotNull(channel);
-      Session s = channel.getNative().getSession();
-      Object o = FieldUtils.readField(s, "proxy", true);
-      assertNotNull(o);
-      assertTrue("Type of proxy should be SOCKS5", o instanceof ProxySOCKS5);
+      try (SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info)) {
+        assertNotNull(channel);
+        Session s = channel.getNative().getSession();
+        Object o = FieldUtils.readField(s, "proxy", true);
+        assertNotNull(o);
+        assertTrue("Type of proxy should be SOCKS5", o instanceof ProxySOCKS5);
+      }
     } finally {
       proxy.stop();
     }
@@ -200,19 +200,116 @@ public class ITestSFTPChannel {
                     .start();
 
     try {
-      Configuration conf = new Configuration(ftpFs.getConf());
+      URI uriInfo = URI.create("sftp://user:password@localhost");
       conf.setInt("fs.sftp.proxy.port", proxy.getListenAddress().getPort());
       conf.setEnum("fs.sftp.proxy.type", AbstractFTPFileSystem.ProxyType.HTTP);
       ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo,
               conf, 0);
-      SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info);
-      assertNotNull(channel);
-      Session s = channel.getNative().getSession();
-      Object o = FieldUtils.readField(s, "proxy", true);
-      assertNotNull(o);
-      assertTrue("Type of proxy should be HTTP", o instanceof ProxyHTTP);
+      try (SFTPChannel channel = (SFTPChannel) SFTPChannel.create(info)) {
+        assertNotNull(channel);
+        Session s = channel.getNative().getSession();
+        Object o = FieldUtils.readField(s, "proxy", true);
+        assertNotNull(o);
+        assertTrue("Type of proxy should be HTTP", o instanceof ProxyHTTP);
+      }
     } finally {
       proxy.stop();
+    }
+  }
+
+  @Test
+  public void testPassword() throws Exception {
+    LOG.info("testPassword");
+    conf.set("fs.sftp.password.localhost.user", "password");
+    URI uriInfo = URI.create("sftp://user@localhost");
+
+    ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = SFTPChannel.create(info)) {
+      assertNotNull(channel);
+    }
+  }
+
+  @Test
+  public void testPasswordJCEKS() throws Exception {
+    LOG.info("testPasswordJCEKS");
+    AbstractFTPFileSystemTest.setEnv();
+    URI uriInfo = URI.create("sftp://user@localhost");
+    URL url = this.getClass().getClassLoader().getResource("keystore.jceks");
+    conf.set("hadoop.security.credential.provider.path", new URI("jceks", "file",
+            url.getPath(), null).toString());
+    ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = SFTPChannel.create(info)) {
+      assertNotNull(channel);
+      assertTrue(
+              "No proxy used therefore class client class shouldn't be proxied",
+              ChannelSftp.class.equals(channel.getNative().getClass()));
+    }
+  }
+
+  @Test
+  public void testCredentialsKeyJCEKS() throws Exception {
+    LOG.info("testCredentialsKeyJCEKS");
+    AbstractFTPFileSystemTest.setEnv();
+    URI uriInfo = URI.create("sftp://user1@localhost");
+    URL url = this.getClass().getClassLoader().getResource("keystore.jceks");
+    conf.set("hadoop.security.credential.provider.path", new URI("jceks", "file",
+            url.getPath(), null).toString());
+    ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = SFTPChannel.create(info)) {
+      assertNotNull(channel);
+    }
+  }
+
+  @Test
+  public void testCredentialsKeyFilePassphraseJCEKS() throws Exception {
+    LOG.info("testCredentialsKeyFilePassphraseJCEKS");
+    AbstractFTPFileSystemTest.setEnv();
+    URI keyUri = this.getClass().getClassLoader()
+            .getResource("test-user-pass").toURI();
+    conf.set("fs.sftp.key.file.localhost.user2", keyUri.toString());
+    URL url = this.getClass().getClassLoader().getResource("keystore.jceks");
+    conf.set("hadoop.security.credential.provider.path", new URI("jceks", "file",
+            url.getPath(), null).toString());
+    URI uriInfo = URI.create("sftp://user2@localhost");
+
+    ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = SFTPChannel.create(info)) {
+      assertNotNull(channel);
+    }
+  }
+
+  @Test
+  public void testCredentialsKeyFile() throws Exception {
+    LOG.info("testCredentialsKeyFile");
+    URI keyUri = this.getClass().getClassLoader()
+            .getResource("test-user").toURI();
+    conf.set("fs.sftp.key.file.localhost.user", keyUri.toString());
+    URI uriInfo = URI.create("sftp://user@localhost");
+
+    ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = SFTPChannel.create(info)) {
+      assertNotNull(channel);
+    }
+  }
+
+  @Test
+  public void testCredentialsKeyFilePassphrase() throws Exception {
+    LOG.info("testCredentialsKeyFile");
+    URI keyUri = this.getClass().getClassLoader()
+            .getResource("test-user-pass").toURI();
+    conf.set("fs.sftp.key.file.localhost.user", keyUri.toString());
+    conf.set("fs.sftp.key.passphrase.localhost.user", "passphrase");
+    URI uriInfo = URI.create("sftp://user@localhost");
+
+    ConnectionInfo info = new ConnectionInfo(SFTPChannel::create, uriInfo, conf,
+            0);
+    try (Channel channel = SFTPChannel.create(info)) {
+      assertNotNull(channel);
     }
   }
 }

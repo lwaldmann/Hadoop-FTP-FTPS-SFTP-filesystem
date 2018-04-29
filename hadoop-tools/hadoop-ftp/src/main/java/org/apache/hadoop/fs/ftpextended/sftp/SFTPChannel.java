@@ -48,6 +48,7 @@ import com.jcraft.jsch.ProxySOCKS5;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpATTRS;
 import com.jcraft.jsch.SftpException;
+import java.util.Date;
 import org.apache.commons.lang.StringUtils;
 
 import static org.apache.hadoop.fs.ftpextended.common.Channel.DEFAULT_BLOCK_SIZE;
@@ -104,7 +105,20 @@ public class SFTPChannel extends AbstractChannel {
 
     try {
       session = jsch.getSession(user, host, port);
-      session.setPassword(password);
+      if (password == null || password.isEmpty()) {
+        //First try to get key private key from credentials provider
+        byte[] key = info.getKey();
+        if (key != null) {
+          //old JSCH is using 3dec-cbc for passphrase while new versions
+          //needs aes128-cbc
+          String s = (String)jsch.getConfig("aes128-cbc");
+          jsch.setConfig("3des-cbc", s);
+          jsch.addIdentity(user, key,
+                  null, info.getKeyPassPhrase());
+        }
+      } else {
+        session.setPassword(password);
+      }
       session.setConfig(config);
       session.setProxy(getProxy(info));
       session.connect();
@@ -429,6 +443,16 @@ public class SFTPChannel extends AbstractChannel {
       return client.get(file.getPath().toUri().getPath());
     } catch (SftpException ex) {
       throw new IOException(ex.toString(), ex);
+    }
+  }
+
+  @Override
+  public void setTimes(Path p, long mtime, long atime) throws IOException {
+    try {
+      Date d = new Date(mtime);
+      client.setMtime(p.toUri().getPath(), (int)d.toInstant().getEpochSecond());
+    } catch (SftpException ex) {
+      throw new FileNotFoundException(ex.toString());
     }
   }
 }
