@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystemTest;
 import org.apache.hadoop.fs.ftpextended.common.Channel;
 import org.apache.hadoop.fs.ftpextended.common.ConnectionInfo;
 import org.apache.hadoop.fs.ftpextended.common.Server;
-import org.apache.hadoop.fs.ftpextended.sftp.ITestSFTPChannel;
 import org.apache.hadoop.test.GenericTestUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,7 +56,7 @@ public class ITestFTPChannel {
   private static Server server;
   private Configuration conf;
   private static final Logger LOG = LoggerFactory.getLogger(
-          ITestSFTPChannel.class);
+          ITestFTPChannel.class);
 
   @BeforeClass
   public static void setTest() throws IOException, FtpException {
