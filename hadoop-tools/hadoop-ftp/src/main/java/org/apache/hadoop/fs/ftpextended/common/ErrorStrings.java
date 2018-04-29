@@ -59,6 +59,7 @@ public final class ErrorStrings {
   public static final String E_STREAM_CLOSED = "Stream closed";
   public static final String E_SEEK_NOTSUPPORTED = "Seek not supported";
   public static final String E_CLIENT_NOTCONNECTED = "Client not connected";
+  public static final String E_MODIFY_TIME = "Time of file %s can't be set";
 
   private ErrorStrings() {
   }

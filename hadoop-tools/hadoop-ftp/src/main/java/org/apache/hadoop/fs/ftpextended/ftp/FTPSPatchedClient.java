@@ -17,11 +17,8 @@ package org.apache.hadoop.fs.ftpextended.ftp;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.Socket;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.net.ssl.SSLSocket;
-import org.apache.commons.net.ftp.FTPCommand;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPSClient;
 import org.apache.hadoop.fs.ftpextended.common.ErrorStrings;
@@ -56,40 +53,4 @@ public class FTPSPatchedClient extends FTPSClient {
       return super.listFiles(pathname);
     }
   }
-
-  @Override
-  protected Socket _openDataConnection_(String command, String arg)
-      throws IOException {
-    Socket socket = super._openDataConnection_(command, arg);
-    _prepareDataSocket_(socket);
-    if (socket instanceof SSLSocket) {
-      SSLSocket sslSocket = (SSLSocket)socket;
-
-      sslSocket.setUseClientMode(getUseClientMode());
-      sslSocket.setEnableSessionCreation(getEnableSessionCreation());
-
-      // server mode
-      if (!getUseClientMode()) {
-        sslSocket.setNeedClientAuth(getNeedClientAuth());
-        sslSocket.setWantClientAuth(getWantClientAuth());
-      }
-      if (getEnabledCipherSuites() != null) {
-        sslSocket.setEnabledCipherSuites(getEnabledCipherSuites());
-      }
-      if (getEnabledProtocols() != null) {
-        sslSocket.setEnabledProtocols(getEnabledProtocols());
-      }
-      sslSocket.startHandshake();
-    }
-
-    return socket;
-
-  }
-
-  @Override
-  protected Socket _openDataConnection_(int command, String arg)
-          throws IOException {
-    return _openDataConnection_(FTPCommand.getCommand(command), arg);
-  }
-
 }

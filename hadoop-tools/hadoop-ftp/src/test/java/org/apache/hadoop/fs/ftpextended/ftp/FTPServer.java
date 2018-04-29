@@ -17,12 +17,17 @@ package org.apache.hadoop.fs.ftpextended.ftp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.ftpserver.FtpServer;
 import org.apache.ftpserver.FtpServerFactory;
 import org.apache.ftpserver.ftplet.Authentication;
 import org.apache.ftpserver.ftplet.AuthenticationFailedException;
 import org.apache.ftpserver.ftplet.Authority;
+import org.apache.ftpserver.ftplet.DefaultFtplet;
 import org.apache.ftpserver.ftplet.FtpException;
+import org.apache.ftpserver.ftplet.FtpSession;
+import org.apache.ftpserver.ftplet.Ftplet;
+import org.apache.ftpserver.ftplet.FtpletResult;
 import org.apache.ftpserver.ftplet.User;
 import org.apache.ftpserver.ftplet.UserManager;
 import org.apache.ftpserver.listener.Listener;
@@ -52,6 +57,19 @@ public class FTPServer implements Server {
     // replace the default listener
     Listener l = factory.createListener();
     serverFactory.addListener("default", l);
+    Map<String, Ftplet> flets = serverFactory.getFtplets();
+    flets.put("t", new DefaultFtplet() {
+      @Override
+      public FtpletResult onConnect(FtpSession session){
+        try {
+          //There seems to be timing issue between FTPServer and LittleProxy
+          //let's go bit slower
+          Thread.sleep(10);
+        } catch (InterruptedException ex) {
+        }
+        return null;
+      }
+    });
 
     List<Authority> auth = new ArrayList<>();
     auth.add(new WritePermission());

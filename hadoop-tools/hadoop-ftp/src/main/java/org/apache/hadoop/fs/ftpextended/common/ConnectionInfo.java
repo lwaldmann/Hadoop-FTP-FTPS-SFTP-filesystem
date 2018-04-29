@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -76,7 +77,9 @@ public class ConnectionInfo extends Configured {
     FS_FTP_USE_KEEPALIVE(".use.keepalive"),
     FS_FTP_KEEPALIVE_PERIOD(".keepalive.period"),
     FS_FTP_GLOB_TYPE(".glob.type"),
-    FS_FTP_CACHE_DIRECTORIES(".cache.");
+    FS_FTP_CACHE_DIRECTORIES(".cache."),
+    FS_FTP_KEY_PASSPHRASE_PREFIX(".key.passphrase."),
+    FS_FTP_KEYFILE_PREFIX(".key.file.");
 
     private final String value;
 
@@ -255,9 +258,18 @@ public class ConnectionInfo extends Configured {
   }
 
   public String getFtpPassword() {
-    return getConf().get(
+    String pass = getConf().get(
             getPropertyName(FSParameter.FS_FTP_PASSWORD_PREFIX, uri) + ftpHost +
             "." + ftpUser);
+    try {
+      if (pass == null) {
+        char[] p = getConf().getPassword(ftpHost + "_" + ftpUser + "_password");
+        pass = p == null ? null : new String(p);
+      }
+      return pass;
+    } catch (IOException ex) {
+      return null;
+    }
   }
 
   public int getMaxConnections() {
@@ -289,5 +301,23 @@ public class ConnectionInfo extends Configured {
 
   public String logWithInfo(String message) {
     return "[" + toString() + "]: " + message;
+  }
+
+  public byte[] getKey() {
+    return KeyUtils.getKey(this,
+            getConf().get(getPropertyName(FSParameter.FS_FTP_KEYFILE_PREFIX,
+            uri) + ftpHost + "." + ftpUser));
+  }
+
+  public byte[] getKeyPassPhrase() {
+    String passphrase =  getConf().get(
+            getPropertyName(FSParameter.FS_FTP_KEY_PASSPHRASE_PREFIX, uri)
+                + ftpHost + "." + ftpUser);
+    if (passphrase == null) {
+      char[] p = KeyUtils.getKeyPassphrase(this);
+      return p == null ? null : new String(p).getBytes(StandardCharsets.UTF_8);
+    } else {
+      return passphrase.getBytes(StandardCharsets.UTF_8);
+    }
   }
 }

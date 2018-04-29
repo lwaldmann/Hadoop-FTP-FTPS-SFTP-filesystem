@@ -27,12 +27,14 @@ For huge number of files it shows order of magnitude performance improvement ove
 * Caching of directory trees. For ftp you always need to list whole directory whenever you ask information about particular file.
 Again for huge number of files it shows order of magnitude performance improvement over not cached connections.
 * Support of keep alive (NOOP) messages to avoid connection drops
-* Support for Unix style or regexp wildcard glob - useful for listing particular files across whole directory tree
+* Support for Unix style or regexp wildcard glob - useful for listing a particular files across whole directory tree
 * Support for reestablishing broken ftp data transfers - can happen surprisingly often
+* Support for sftp private keys (including pass phrase)
+* Support for keeping passwords, private keys and pass phrase in the jceks key stores
 
 Schemas and theirs implementing classes
 -------
-FTP: org.apache.hadoop.fs.ftpextended.ftp.FTPFileSystem
+FTP:  org.apache.hadoop.fs.ftpextended.ftp.FTPFileSystem
 FTPS: org.apache.hadoop.fs.ftpextended.ftp.FTPFileSystem
 SFTP: org.apache.hadoop.fs.ftpextended.sftp.SFTPFileSystem
 
@@ -65,6 +67,12 @@ Properties
 * fs.\<schema\>.password.\<hostname\>.\<user\> - password used when connecting as \<user\> to \<hostname\>
     * values: string
     * default: anonymous@domain.com
+* hadoop.security.credential.provider.path - location of jceks keystore, the same as using -provider parameter for hadoop commands
+    * values: string
+* fs.\<schema\>.key.file.\<hostname\>.\<user\> - URI of private key used to conect as \<user\> to \<hostname\>
+    * values: URI string
+* fs.\<schema\>.key.passphrase.\<hostname\>.\<user\> - Pass phrase used to decrypt private key
+    * values: string
 * fs.\<schema\>.proxy.type - type of proxy
     * values: enum - NONE/HTTP/SOCKS4/SOCKS5
     * default: NONE
@@ -93,6 +101,39 @@ FTP: HTTP
 FTPS: NONE
 SFTP: HTTP, SOCKS4, SOCKS5
 
+Notes on password/keys management
+=================================
+Passwords and private keys with/without pass phrase can be supplied both on command line and in jceks key store or combination of them.
+####File location
+JCEKS files and private ley files must be accessible on all nodes which uses this file system.
+Recommended location is therefore HDFS 
+####Priority rules
+command line parameter values has precedence over key store values
+password has priority over key file
+####JCEKS aliases
+password: \<hostname\>_\<user\>_password
+private key: \<hostname\>_\<user\>_key
+key passphrase: \<hostname\>_\<user\>_key_passphrase
+####Adding password or pass phrase to the key store
+By hadoop credentials utility
+hadoop credential create \<hostname\>_\<user\>_password -provider jceks://<keystore_location\>/\<keystore\>.jceks
+hadoop credential create \<hostname\>_\<user\>_key_passphrase -provider jceks://<keystore_location\>/\<keystore\>.jceks
+
+By keytool utility (requires not default password - see [Keystore access password](#keystore-access-password)
+keytool -importpassword  -alias \<hostname\>_\<user\>_password -keystore \<keystore\>.jceks -storetype JCEKS
+keytool -importpassword  -alias \<hostname\>_\<user\>_key_passphrase -keystore \<keystore\>.jceks -storetype JCEKS
+
+####Adding private key to the keystore
+Hadoop credentials utility can work only with the SecretKeyEntry not with the PrivateKeyEntry. To add the private key entry to the keystore you can use following series of commands:
+openssl req -new -x509 -key \<private key file\> -out \<key certificate\>
+openssl pkcs12 -export -out \<keystore\>.pk12 -inkey \<private key file\> -in \<key certificate\>
+keytool -importkeystore  -alias 1 -destalias \<hostname\>_\<user\>_key -v -srckeystore \<keystore\>.pk12 -srcstoretype PKCS12 -destkeystore \<keystore\>.jceks -deststoretype JCEKS
+####Keystore access password
+Other limitation of hadoop credentials implementation is that it is using a default keystore password which is too short and not accepted by the keytool utility. Therefore when creating a key store containing the private key, you must specify your own password and than pass it to the all nodes using the keys store.
+That can be done either by specifying an environment variable: HADOOP_CREDSTORE_PASSWORD
+Either by defining property *hadoop.security.credstore.java-keystore-provider.password-file* which contains location of a file containing the password. See more in https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
+
+     
 Contract integration test
 -------------------------
 Contract integration tests will by default use built in ftp/sftp test server. If you would like to use different servers please modify src/test/resources/contract/params.xml file so properties fs.contract.use.internal.ftpserver resp. fs.contract.use.internal.sftpserver are set to false and specify the proper endpoints in src/test/resources/contract-test-options.xml
@@ -100,8 +141,6 @@ Contract integration tests will by default use built in ftp/sftp test server. If
 
 TODO
 ----
-key file for sftp  - easy for local use but for distcp - distributing to the nodes is problematic
-
 SOCKS support for ftp
 
 add support for appendFile

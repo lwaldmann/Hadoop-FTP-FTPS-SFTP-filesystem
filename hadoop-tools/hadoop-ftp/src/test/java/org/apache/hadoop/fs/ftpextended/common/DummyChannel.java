@@ -121,4 +121,9 @@ public class DummyChannel extends AbstractChannel {
   public Object getNative() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
+
+  @Override
+  public void setTimes(Path p, long mtime, long atime) throws IOException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
 }

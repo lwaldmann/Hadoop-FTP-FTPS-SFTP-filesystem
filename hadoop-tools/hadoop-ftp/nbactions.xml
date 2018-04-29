@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-distcp</actionName>
+            <displayName>distcp</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <test>org.apache.hadoop.fs.ftpextended.contract.ITestContractDistCp</test>
+                <env.HADOOP_PROTOC_PATH>/usr/local/bin/protoc</env.HADOOP_PROTOC_PATH>
+            </properties>
+            <activatedProfiles>
+                <activatedProfile>parallel-tests</activatedProfile>
+            </activatedProfiles>
+        </action>
+        <action>
+            <actionName>CUSTOM-dd</actionName>
+            <displayName>dd</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <test>org.apache.hadoop.fs.ftpextended.contract.ITestContractDistCp</test>
+                <env.HADOOP_PROTOC_PATH>/usr/local/bin/protoc</env.HADOOP_PROTOC_PATH>
+                <forkMode>once</forkMode>
+                <maven.surefire.debug>"-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=65114"</maven.surefire.debug>
+                <jpda.listen>true</jpda.listen>
+                <jpda.address>65114</jpda.address>
+            </properties>
+            <activatedProfiles>
+                <activatedProfile>parallel-tests</activatedProfile>
+            </activatedProfiles>
+        </action>
+    </actions>

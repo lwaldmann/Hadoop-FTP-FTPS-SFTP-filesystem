@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Set;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -44,6 +46,8 @@ import org.apache.hadoop.fs.ftpextended.common.ErrorStrings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
+import java.text.DateFormat;
+import java.util.TimeZone;
 import org.apache.commons.net.ftp.FTPSClient;
 
 import static org.apache.hadoop.fs.ftpextended.common.AbstractFTPFileSystem.ProxyType.HTTP;
@@ -463,5 +467,18 @@ public class FTPChannel extends AbstractChannel {
   @Override
   public InputStream getDataStream(FileStatus file) throws IOException {
     return client.retrieveFileStream(file.getPath().toUri().getPath());
+  }
+
+  @Override
+  public void setTimes(Path p, long mtime, long atime) throws IOException {
+    DateFormat tm = new SimpleDateFormat("yyyyMMddHHmmss");
+    tm.setTimeZone(TimeZone.getTimeZone("GMT"));
+    if (!client.setModificationTime(p.toUri().getPath(),
+            tm.format(new Date(mtime)))) {
+      LOG.error(getConnectionInfo().logWithInfo("Time for file: "
+              + p.toString() + " can not be modified"));
+      throw new FileNotFoundException(String.format(ErrorStrings.E_MODIFY_TIME,
+              p));
+    }
   }
 }

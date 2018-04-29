@@ -210,4 +210,7 @@ public interface Channel extends Closeable {
    * @throws IOException communication problem
    */
   void disconnect(boolean hardClose) throws IOException;
+
+  void setTimes(Path p, long mtime, long atime) throws IOException;
+
 }

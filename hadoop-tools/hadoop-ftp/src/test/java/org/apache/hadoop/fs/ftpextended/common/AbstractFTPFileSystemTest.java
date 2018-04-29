@@ -18,10 +18,12 @@
 package org.apache.hadoop.fs.ftpextended.common;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -527,5 +529,15 @@ public abstract class AbstractFTPFileSystemTest {
 
   protected void setFS(URI uri, Configuration conf) throws IOException {
     ftpFs = (AbstractFTPFileSystem) FileSystem.get(uri, conf);
+  }
+
+
+  public static void setEnv() throws Exception {
+    Map<String, String> env = System.getenv();
+    Class<?> cl = env.getClass();
+    Field field = cl.getDeclaredField("m");
+    field.setAccessible(true);
+    Map<String, String> writableEnv = (Map<String, String>) field.get(env);
+    writableEnv.put("HADOOP_CREDSTORE_PASSWORD", "testtest");
   }
 }
